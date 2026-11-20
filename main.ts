@@ -1,36 +1,79 @@
-// A working gta6-trophy-guide-01 entry (Node 22, standard library only): the guide is this directory's app/ folder,
-// plain static files a browser opens at app/index.html (ES modules, CSS, no build step), offline: it loads nothing
-// over the network, and its trophy list and guides are app/data/trophies.json. The program hands it in: it copies app/
-// and screenshots/ from beside this file to /output and writes /output/dossier.json, the summary the judge reads (your
-// screenshots, the first load's files and bytes, and your source), with the vendored make.fun library. Leave
-// vendor/makefun-frontend.ts as it is: the scorer requires dossier.json to be byte for byte what its own copy writes.
+// Leonida Legend — GTA VI trophy guide, entrypoint (Node 22, stdlib only).
 //
-// Only the plumbing, not a winner: a plain checklist of the 55 trophies with a one-line hint each. Write a real guide
-// for every trophy in your own words, a roadmap to the platinum, filters and a spoiler setting in app/, put 3 or 4 PNG
-// or JPEG screenshots of it in screenshots/ (the first by name is the cover; shots.json says which views this
-// starter's were taken of), and run it.
+// What this program does, in three steps:
+//   1. Copy the static guide (app/) into the output directory.
+//   2. Copy the maker's screenshots (screenshots/) alongside it.
+//   3. Write dossier.json with the vendored make.fun library, so the judge
+//      reads the screenshots, the first load's files and bytes, and the source.
 //
-// Serve it locally with `node serve.ts`, then open http://localhost:8080.
-// Outside the grader's container, MAKEFUN_OUTPUT_DIR stands in for /output:
+// The guide itself is plain files: app/index.html opens in desktop Chrome
+// with the network off, its data in app/data/trophies.json, its logic in
+// app/app.js and app/roadmap.js, its look in app/style.css. No build step,
+// no network request at runtime, nothing to install.
+//
+// Run it outside the grader's container with:
 //   mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts
+// It must write byte-identical output on every run, so it copies files in a
+// fixed order and never stamps a time or a random value anywhere.
 
-import { cpSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildDossier } from './vendor/makefun-frontend.ts';
 
-const here = fileURLToPath(new URL('.', import.meta.url));
-const out = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
+// Where the repository lives, and where the entry goes. Outside the grader,
+// MAKEFUN_OUTPUT_DIR stands in for /output.
+const repoRoot = fileURLToPath(new URL('.', import.meta.url));
+const outDir = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
 
-mkdirSync(out, { recursive: true });
-cpSync(join(here, 'app'), join(out, 'app'), { recursive: true });
-mkdirSync(join(out, 'screenshots'), { recursive: true });
-if (existsSync(join(here, 'screenshots'))) cpSync(join(here, 'screenshots'), join(out, 'screenshots'), { recursive: true });
+// The scorer's own caps (reference/gate.json): only text_max_bytes shapes
+// the bytes; the others refuse an entry the scorer would refuse — more than
+// 4 screenshots or one over 256 KiB, more than 993 files and directories in
+// app/, or 48 MiB of app files (app/ shares /output's own 1000-entry cap
+// with screenshots/ and dossier.json, so leave them room).
+const DOSSIER_OPTIONS = {
+  text_max_bytes: 163840,
+  screenshots: { max: 4, max_bytes: 262144 },
+  app_max_files: 993,
+  app_max_bytes: 50331648,
+} as const;
 
-// The scorer's own caps (reference/gate.json): only text_max_bytes shapes the bytes; the others refuse an entry the
-// scorer would refuse (more than 4 screenshots or one over 256 KiB; more than 993 files and directories in app/ or
-// 48 MiB of app files: app/ counts beside /output's own 1000-entry cap, its screenshots/ and dossier.json).
-writeFileSync(
-  join(out, 'dossier.json'),
-  buildDossier(out, { text_max_bytes: 163840, screenshots: { max: 4, max_bytes: 262144 }, app_max_files: 993, app_max_bytes: 50331648 }),
-);
+// Copy a directory tree in a fixed, deterministic order: entries sorted by
+// name, directories before the files inside them, so two runs agree byte
+// for byte. Symlinks and special files are refused — the guide is plain
+// files only, which is what the gate requires of app/ anyway.
+function copyTreeSorted(source: string, target: string): void {
+  mkdirSync(target, { recursive: true });
+  const entries = readdirSync(source, { withFileTypes: true }).sort((a, b) =>
+    a.name < b.name ? -1 : a.name > b.name ? 1 : 0,
+  );
+  for (const entry of entries) {
+    const from = join(source, entry.name);
+    const to = join(target, entry.name);
+    if (entry.isDirectory()) {
+      copyTreeSorted(from, to);
+    } else if (entry.isFile()) {
+      cpSync(from, to);
+    } else {
+      throw new Error(`refusing non-regular entry in ${from}`);
+    }
+  }
+}
+
+function handIn(): void {
+  const appSource = join(repoRoot, 'app');
+  const shotsSource = join(repoRoot, 'screenshots');
+  if (!statSync(appSource).isDirectory()) throw new Error('app/ is missing');
+  if (!existsSync(shotsSource)) throw new Error('screenshots/ is missing');
+
+  mkdirSync(outDir, { recursive: true });
+  copyTreeSorted(appSource, join(outDir, 'app'));
+  copyTreeSorted(shotsSource, join(outDir, 'screenshots'));
+
+  // vendor/makefun-frontend.ts is the kit's copy, unchanged: the scorer
+  // rebuilds the dossier with the same library and compares byte for byte.
+  const dossier = buildDossier(outDir, DOSSIER_OPTIONS);
+  writeFileSync(join(outDir, 'dossier.json'), dossier);
+}
+
+handIn();

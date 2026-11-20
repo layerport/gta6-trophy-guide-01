@@ -3,23 +3,89 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>GTA VI trophy checklist</title>
+<title>Leonida Legend — GTA VI Trophy Guide &amp; Tracker</title>
+<meta name="description" content="Offline guide and tracker for all 55 PlayStation 5 trophies of Grand Theft Auto VI: official names, descriptions and grades, a cited guide for each, a roadmap to the platinum, missable flags, filters and a spoiler-safe mode.">
+<link rel="icon" href="data:,">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header>
-  <h1>GTA VI trophy checklist</h1>
-  <p id="progress">0 of 55 earned</p>
+<header class="hero">
+  <div class="hero-inner">
+    <p class="eyebrow">Grand Theft Auto VI &middot; PlayStation 5 &middot; 55 trophies</p>
+    <h1>Leonida Legend</h1>
+    <p class="tagline">Every GTA VI trophy, with a guide that shows its sources — and a tracker that remembers where you are.</p>
+    <div class="progress-wrap" aria-label="Trophy progress">
+      <div class="progress-line"><span id="progressText">0 of 55 earned</span><span id="progressPct">0%</span></div>
+      <div class="progress-bar"><div id="progressFill"></div></div>
+      <p class="progress-counts" id="gradeCounts"></p>
+    </div>
+  </div>
 </header>
-<div class="controls">
-  <label>Grade <select id="grade"><option value="all">All</option><option value="platinum">Platinum</option><option value="gold">Gold</option><option value="silver">Silver</option><option value="bronze">Bronze</option></select></label>
-  <button id="export" type="button">Export progress</button>
-  <label class="import">Import progress <input id="import" type="file" accept="application/json"></label>
-</div>
-<table>
-  <thead><tr><th>Earned</th><th>Trophy</th><th>Grade</th><th>How to get it</th></tr></thead>
-  <tbody id="rows"></tbody>
-</table>
+
+<main>
+  <section class="warn" id="missableBanner">
+    <strong>&#9888; One trophy can be missed.</strong>
+    <span><b>Positive Mental Attitude</b> — meditate on the balcony with Lucia in Chapter 1, after the mission <i>Down to Earth</i>, before the chapter ends. Every other trophy can be earned in free roam after the story. <a href="#roadmap">See the roadmap</a>.</span>
+  </section>
+
+  <section class="controls" aria-label="Tracker controls">
+    <label class="search">Search
+      <input id="search" type="search" placeholder="Trophy, mission, place…" autocomplete="off">
+    </label>
+    <div class="kinds" role="group" aria-label="Filter by kind">
+      <button type="button" data-kind="all" class="kind active">All 55</button>
+      <button type="button" data-kind="story" class="kind">Story</button>
+      <button type="button" data-kind="missable" class="kind">Missable</button>
+      <button type="button" data-kind="collectibles" class="kind">Collectibles</button>
+      <button type="button" data-kind="activities" class="kind">Activities</button>
+      <button type="button" data-kind="online" class="kind">Online</button>
+    </div>
+    <label>Grade
+      <select id="grade">
+        <option value="all">All grades</option>
+        <option value="platinum">Platinum</option>
+        <option value="gold">Gold</option>
+        <option value="silver">Silver</option>
+        <option value="bronze">Bronze</option>
+      </select>
+    </label>
+    <label>Status
+      <select id="status">
+        <option value="all">All</option>
+        <option value="remaining">Still to earn</option>
+        <option value="earned">Earned</option>
+      </select>
+    </label>
+    <label class="toggle"><input id="spoiler" type="checkbox"> Spoiler-safe: hide story names until earned</label>
+    <div class="io">
+      <button id="export" type="button">Export progress</button>
+      <label class="import">Import progress <input id="import" type="file" accept="application/json,.json"></label>
+      <button id="reset" type="button">Reset</button>
+    </div>
+  </section>
+
+  <section id="roadmap" aria-label="Roadmap to the platinum">
+    <h2>Roadmap to the platinum</h2>
+    <p class="section-note">Six stages, in the order to play them. Built from the official descriptions: story chapters and missions first, then character quests, activities, collectibles, crime and cash — and 100% completion last. About 200 hours all in, one playthrough, no online trophies.</p>
+    <ol id="roadmapStages" class="stages"></ol>
+  </section>
+
+  <div class="layout">
+    <section class="list-col" aria-label="Trophy checklist">
+      <h2 id="listHeading">Checklist <span id="shownCount"></span></h2>
+      <p class="section-note" id="emptyNote" hidden>No online trophies exist in this game — all 55 are single-player, so this filter is empty by design.</p>
+      <ul id="rows" class="rows"></ul>
+    </section>
+    <aside class="detail-col" aria-label="Selected trophy">
+      <div id="detail" class="detail"></div>
+    </aside>
+  </div>
+
+  <footer>
+    <p>Official trophy names, descriptions and grades are PlayStation's, cross-checked against Push Square, KeenGamer, Insider Gaming, Radio Times and PlanetGTA6 (Exophase + PSNProfiles). Every guide is written in our own words and names its source beside it. No Rockstar artwork is used; this guide is unofficial and not affiliated with Rockstar Games or PlayStation. Works fully offline — no network requests, progress stays in your browser.</p>
+    <p id="sourcesFoot"></p>
+  </footer>
+</main>
 <script type="module" src="app.js"></script>
 </body>
 </html>
