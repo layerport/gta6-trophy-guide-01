@@ -44,9 +44,13 @@ if (!existsSync(join(appDir, "index.html"))) fail("app/index.html is missing");
 if (!existsSync(join(appDir, "data", "trophies.json"))) fail("app/data/trophies.json is missing");
 
 // Start from a clean output directory so a stale file from an earlier run
-// can never leak into the submission.
-rmSync(outputDir, { recursive: true, force: true });
+// can never leak into the submission. Clear only the contents: in the
+// grader /output is a mount point, so removing the folder itself fails
+// with "Device or resource busy" and aborts the run.
 mkdirSync(outputDir, { recursive: true });
+for (const name of readdirSync(outputDir)) {
+  rmSync(join(outputDir, name), { recursive: true, force: true });
+}
 
 cpSync(appDir, join(outputDir, "app"), { recursive: true });
 
